@@ -1,0 +1,60 @@
+最近一直在研究Docker。跟初学者一样，先要安装docker。但试了ubuntu、RedHat等多个版本，均无法成功安装docker。后来无意之中在DeepIn里试了下，居然成功了(不得不为国产的操作系统点个赞)！现将安装过程和体会记录下来。
+ 
+笔者使用的DeepIn是15.3，对应的ubuntu内核满足了docker的最低要求。下面就来讲一下笔者是如何一步步地安装好docker的。
+ 
+首先在DeepIn中切换到root账户。然后运行如下命令：
+$sudo apt-get update  
+$sudo apt-get install -y docker.io  
+$sudo ln -sf /usr/bin/docker.io /usr/local/bin/docker  
+$sudo sed -i '$acomplete -F _docker docker' /etc/bash_completion.d/docker.io  
+ 
+运行最后一个命令可能会提示bash_completion.d目录不存在，不用管，接着往下操作。
+ 
+此时docker已经安装好了，可以启动服务了：
+$sudo service docker start  
+ 
+这时候只是有了虚拟机运行的环境，还需要下载操作系统虚拟机镜像文件。在终端中运行如下命令：
+$sudo docker pull ubuntu:12.04  
+ 
+就可以将12.04版本的ubuntu镜像文件下载到本地，并挂接到docker上。然后在终端中运行如下命令就可以启动虚拟机镜像：
+$sudo docker run -t -i ubuntu:12.04 /bin/bash  
+ 
+这时在终端中可能看不到什么反应。可通过如下命令来查看启动的虚拟机镜像：
+$sudo docker ps  
+CONTAINER IDIMAGE   COMMAND CREATED   STATUS  PORTS NAMES  
+5bdiswi2asdk  ubuntu  "bin/bash"  
+2 hours ago　Up 2 hours　happy_noyce  
+ 
+然后在终端中运行如下命令连接到虚拟机中：
+$sudo docker attach 5bdiswi2asdk  
+root@5bdiswi2asdk:/#  
+ 
+这样就可以像在真实的linux系统中一样执行各类linux操作了。
+ 
+但不要高兴的太早了。笔者发现这个ubuntu的镜像是个精简版，总共才160多M，里面几乎没有什么可用的软件和命令，连ping和ifconfig这样的命令都运行不了。所以要想用的顺手还得安装一些必要的软件。
+ 
+在虚拟机的终端中运行如下命令：
+root@5bdiswi2asdk:/#apt-get update  
+ 
+这样才可以使用apt-get命令搜寻和安装软件。如在终端中运行如下命令：
+root@5bdiswi2asdk:/#apt-cache ifconfig  
+ 
+安装完自己需要的软件后千万别急着关机，否则下次启动虚拟机后依然是最原始的镜像，里面什么软件都没有，所以安装完软件后可以在宿主机(即这里的DeepIn)中运行如下命令将更改后的镜像导出到本地：
+$sudo docker export 5bdiswi2asdk>ubuntu.tar  
+ 
+这时打开导出后的ubuntu.tar，会发现里面已经有之前新建的文件夹、安装的软件目录了。
+如果想停止虚拟机镜像，可在虚拟机镜像的终端中运行exit命令，这时不仅退出了虚拟机终端，同时也会关闭虚拟机镜像：
+root@5bdiswi2asdk:/#exit  
+ 
+如果下次想打开之前导出的虚拟机镜像，可在主机的终端中运行如下命令：
+$cat ubuntu.tar | sudo docker import - test/ubuntu  
+ 
+然后运行如下命令查看导入的所有镜像：
+$sudo docker images  
+REPOSITORY TAG   IMAGE_ID CREATEDVIRTUAL  
+test/ubuntu  v12.04 449iadsfi45   1 miniute   683.32MB  
+ 
+这样就可以使用如下命令启动这个ubuntu镜像了：
+$sudo docker run -t -i test/ubuntu /bin/bash
+ 
+本文永久更新地址：http://www.linuxdiyf.com/linux/27995.html
